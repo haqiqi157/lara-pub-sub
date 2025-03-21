@@ -18,24 +18,18 @@ class AdminNotificationController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return ResponseAPI::success($notifications, 'Notifications fetched successfully');
+        return ResponseAPI::success($notifications, 'notifications fetched successfully');
     }
     public function send(Request $request)
     {
-        $user_id = Notification::with('users')->firstOrFail();
-
-        if (!$user_id)
-        {
-            return ResponseAPI::error('there is no user_id', 404);
-        }
-
-        $validator = Validator::make($request->all(), [
-            'user_id' => 'required|exists:users,id',
-            'title' => 'required|string|max:255',
-            'type' => 'required|string|email|max:255|unique:users'
-        ]);
-
         try {
+            $userId = User::find($request->input('user_id'));
+
+            if (!$userId)
+            {
+                throw new \Exception("there is no user id");
+            }
+
             $notification = Notification::create([
                 'user_id' => $request->input('user_id'),
                 'title' => $request->input('title'),
@@ -43,12 +37,12 @@ class AdminNotificationController extends Controller
                 'type' => $request->input('type'),
             ]);
 
-            broadcast(new InvoiceNotification($request->user_id, $notification));
+            event(new InvoiceNotification($request->user_id, $notification));
 
             return ResponseAPI::success($notification,'success sent notification');
         } catch (\Exception $e)
         {
-            return ResponseAPI::error($e->getMessage(), 500);
+            return ResponseAPI::error($e->getMessage(), 404);
         }
 
     }
