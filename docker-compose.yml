@@ -1,0 +1,54 @@
+version: '3.8'
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        image: laravel-notif
+        container_name: laravel-app
+        restart: unless-stopped
+        tty: true
+        environment:
+            SERVICE_NAME: app
+            SERVICE_TAGS: dev
+            REDIS_HOST: redis
+            REDIS_PASSWORD: null
+            REDIS_PORT: 6379
+        working_dir: /var/www
+        volumes:
+            - .:/var/www
+            - ./docker-compose/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+        networks:
+            - app-network
+    db:
+        image: mysql:8.0.3
+        container_name: mysql
+        restart: unless-stopped
+        environment:
+            MYSQL_DATABASE: laravel
+            MYSQL_ROOT_PASSWORD: root
+            MYSQL_PASSWORD: root
+            MYSQL_USER: root
+        ports:
+            - "3306:3306"
+        volumes:
+            - dbdata:/var/lib/mysql
+        networks:
+            - app-network
+
+    redis:
+        image: redis:alpine      # Menambahkan Redis sebagai service
+        container_name: redis
+        restart: unless-stopped
+        ports:
+            - "6379:6379"          # Menggunakan port default Redis
+        networks:
+            - app-network
+
+networks:
+    app-network:
+        driver: bridge
+
+volumes:
+    dbdata:
+        driver: local
